@@ -3,8 +3,11 @@ package cluster
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 
+trait MySerializable
+
+
 object Counter {
-  trait Command
+  trait Command extends MySerializable
   case object Increment extends Command
   final case class GetValue(replyTo: ActorRef[Int]) extends Command
   case object GoodByeCounter extends Command
