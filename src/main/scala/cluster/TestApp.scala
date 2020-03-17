@@ -1,25 +1,30 @@
 package cluster
 
-import java.net.URI
+import akka.actor.typed._
+import akka.actor.typed.scaladsl.Behaviors
+import akka.cluster.typed.{Cluster, ClusterSingleton, SingletonActor}
 
-import akka.actor.typed.{ActorRef, ActorRefResolver, ActorSystem, SpawnProtocol}
-
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationDouble
 
 object TestApp extends App {
-  val system = ActorSystem(SpawnProtocol(), "test-system")
-  implicit val ec: ExecutionContext = system.executionContext
+  val system = ActorSystem(SpawnProtocol(), "cluster-spike-system")
+  implicit val ec = system.executionContext
 
-  private val uri = new URI("akka://cluster-spike-system@127.0.0.1:2551/system/singletonProxyGlobalCounter-no-dc#2038879230")
+  private val singletonActor: SingletonActor[Counter.Command] = SingletonActor(
+    Behaviors
+      .supervise(Counter())
+      .onFailure[Exception](SupervisorStrategy.restart),
+    "GlobalCounter"
+  )
 
-  private val proxy: ActorRef[Nothing] = ActorRefResolver(system).resolveActorRef(uri.toString)
+  Thread.sleep(2000)
 
-  val a: Runnable = new Runnable {
-    override def run(): Unit = {
-      println("sending Increment -------------> ")
-      proxy.unsafeUpcast[Counter.Command] ! Counter.Increment
-    }
+  val singleton = ClusterSingleton(system)
+  private val proxy: ActorRef[Counter.Command] = singleton.init(singletonActor)
+
+  val a: Runnable = () => {
+    println("sending msg ===============>")
+    proxy ! Counter.Increment
   }
   system.scheduler.scheduleAtFixedRate(1.seconds, 1.seconds)(a)
 

@@ -5,7 +5,6 @@ import akka.actor.typed.{ActorRef, Behavior}
 
 trait MySerializable
 
-
 object Counter {
   trait Command extends MySerializable
   case object Increment extends Command
@@ -16,7 +15,8 @@ object Counter {
     def updated(value: Int): Behavior[Command] = Behaviors.setup { ctx =>
       Behaviors.receiveMessage[Command] {
         case Increment =>
-          println(s" ************ actor ${ctx.system.path}")
+          println(s" ************ actor ${ctx.system.path.address}")
+          println("value = " + value)
           updated(value + 1)
         case GetValue(replyTo) =>
           replyTo ! value
