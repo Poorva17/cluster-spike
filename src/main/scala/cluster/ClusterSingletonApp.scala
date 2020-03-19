@@ -1,15 +1,12 @@
 package cluster
 
+import akka.Done
+import akka.actor.CoordinatedShutdown
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{
-  ActorRef,
-  ActorSystem,
-  SpawnProtocol,
-  SupervisorStrategy
-}
+import akka.actor.typed.{ActorRef, ActorRefResolver, ActorSystem, SpawnProtocol, SupervisorStrategy}
 import akka.cluster.typed.{ClusterSingleton, SingletonActor}
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 object ClusterSingletonApp extends App {
   val system = ActorSystem(SpawnProtocol(), "cluster-spike-system")
@@ -30,5 +27,11 @@ object ClusterSingletonApp extends App {
 
   proxy ! Counter.Increment
 
+  println(s"proxy ---------> ${ActorRefResolver(system).toSerializationFormat(proxy)}")
   println("Counter actor UP")
+
+  CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "print") { () =>
+  println("stopping")
+    Future {println("shutting down"); Done}
+  }
 }
