@@ -13,11 +13,12 @@ object Counter {
 
   def apply(): Behavior[Command] = {
     def updated(value: Int): Behavior[Command] = Behaviors.setup { ctx =>
-      Behaviors.receiveMessage[Command] {
+    println("starting counter actor")
+      def behavior(value: Int): Behaviors.Receive[Command] = Behaviors.receiveMessage[Command] {
         case Increment =>
           println(s" ************ actor ${ctx.system.path.address}")
           println("value = " + value)
-          updated(value + 1)
+          behavior(value + 1)
         case GetValue(replyTo) =>
           replyTo ! value
           Behaviors.same
@@ -25,6 +26,7 @@ object Counter {
           // Possible async action then stop
           Behaviors.stopped
       }
+      behavior(value)
     }
 
     updated(0)
